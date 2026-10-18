@@ -1,11 +1,12 @@
 import numpy as np
+from csv import reader
 
 def RANSAC(W, threshold:float=0.1, max_iterations:int=1000):
     # Implementacja algorytmu RANSAC
     best_inliers = []
     best_model = None
 
-    for iteration in range(max_iterations):
+    for _ in range(max_iterations):
         # 3 losowe punkty z chmury punktów W
         sample_indices = np.random.choice(len(W), 3, replace=False)
         A, B, C = W[sample_indices]
@@ -47,8 +48,21 @@ def RANSAC(W, threshold:float=0.1, max_iterations:int=1000):
     return best_model, best_inliers
 
 
+def points_reader(namefile:str):
+    with open(namefile, 'r', newline='\n') as file:
+        csv_reader = reader(file)
+        next(csv_reader)  # pomijanie nagłówka
+        points = np.array([list(map(float, row)) for row in csv_reader]) # konwersja danych z pliku do tablicy numpy
+    return points
+
+
 if __name__ == '__main__':
+    horizontal_surface_points = points_reader('horizontal_surface_points.xyz')
+    vertical_surface_points = points_reader('vertical_surface_points.xyz')
+    cylindrical_surface_points = points_reader('cylindrical_surface_points.xyz')
+        
+    '''
     points = np.loadtxt('horizontal_surface_points.xyz', delimiter=',', skiprows=1)
     model, inliers = RANSAC(points, threshold=0.1, max_iterations=1000)
     print(f"Znaleziono {len(inliers)}/{len(points)} inlierów")
-    print(f"Model płaszczyzny: wektor normalny = {model[0]}, D = {model[1]}")
+    print(f"Model płaszczyzny: wektor normalny = {model[0]}, D = {model[1]}")'''
