@@ -57,31 +57,13 @@ def generate_points_cylindrical_surface(num_points:int = 2000, radius = 100, hei
 
 
 if __name__ == '__main__':
-    cloud_points = generate_points(2000) # generowanie punktów
     horizontal_surface_points = generate_points_flat_horizontal_surface(2000, 200, 200)
     vertical_surface_points = generate_points_flat_vertical_surface(2000, 200, 200)
     cylindrical_surface_points = generate_points_cylindrical_surface(2000, 100, 200)
 
     with open('cloud_points.xyz', 'w', newline='\n') as file: # otwieranie pliku do zapisu
         csv_writer = writer(file) # tworzenie obiektu writer do zapisu danych
-        csv_writer.writerow(['x', 'y', 'z']) # zapisanie nagłówków kolumn
-        for point in cloud_points:
-            csv_writer.writerow(point) # zapisanie każdego punktu do pliku
-
-    with open('horizontal_surface_points.xyz', 'w', newline='\n') as file:
-        csv_writer = writer(file)
-        csv_writer.writerow(['x', 'y', 'z'])
-        for point in horizontal_surface_points:
-            csv_writer.writerow(point)
-
-    with open('vertical_surface_points.xyz', 'w', newline='\n') as file:
-        csv_writer = writer(file)
-        csv_writer.writerow(['x', 'y', 'z'])
-        for point in vertical_surface_points:
-            csv_writer.writerow(point)
-
-    with open('cylindrical_surface_points.xyz', 'w', newline='\n') as file:
-        csv_writer = writer(file)
-        csv_writer.writerow(['x', 'y', 'z'])
-        for point in cylindrical_surface_points:
-            csv_writer.writerow(point)
+        csv_writer.writerow(['x', 'y', 'z'])  # zapisanie nagłówków kolumn
+        csv_writer.writerows(horizontal_surface_points) # zapisanie każdego punktu do pliku
+        csv_writer.writerows(vertical_surface_points)
+        csv_writer.writerows(cylindrical_surface_points)
