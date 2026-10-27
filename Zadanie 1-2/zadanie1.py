@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.stats import norm, uniform
 from csv import writer
 from numpy import cos, pi, sin
@@ -57,9 +58,16 @@ def generate_points_cylindrical_surface(num_points:int = 2000, radius = 100, hei
 
 
 if __name__ == '__main__':
-    horizontal_surface_points = generate_points_flat_horizontal_surface(2000, 200, 200)
-    vertical_surface_points = generate_points_flat_vertical_surface(2000, 200, 200)
-    cylindrical_surface_points = generate_points_cylindrical_surface(2000, 100, 200)
+     # pozioma: X w [0, 200]
+    horizontal_surface_points = np.array(list(generate_points_flat_horizontal_surface(2000, 200, 200)))
+    
+    # pionowa +300 w osi X
+    vertical_surface_points = np.array(list(generate_points_flat_vertical_surface(2000, 200, 200)))
+    vertical_surface_points[:, 0] += 300
+    
+    # 3 walec +700 w osi X
+    cylindrical_surface_points = np.array(list(generate_points_cylindrical_surface(2000, 100, 200)))
+    cylindrical_surface_points[:, 0] += 700
 
     with open('cloud_points.xyz', 'w', newline='\n') as file: # otwieranie pliku do zapisu
         csv_writer = writer(file) # tworzenie obiektu writer do zapisu danych

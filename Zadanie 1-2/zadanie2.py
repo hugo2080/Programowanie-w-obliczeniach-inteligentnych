@@ -1,5 +1,8 @@
 import numpy as np
 from csv import reader
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans, DBSCAN
+import pyransac3d as pyrsc
 
 def RANSAC(W, threshold:float=0.1, max_iterations:int=1000):
     # Implementacja algorytmu RANSAC
@@ -57,12 +60,106 @@ def points_reader(namefile:str):
 
 
 if __name__ == '__main__':
-    horizontal_surface_points = points_reader('horizontal_surface_points.xyz')
-    vertical_surface_points = points_reader('vertical_surface_points.xyz')
-    cylindrical_surface_points = points_reader('cylindrical_surface_points.xyz')
+    cloud_points = points_reader('cloud_points.xyz')
+    # 3 & 4
+    clusterer = KMeans(n_clusters=3)
+    X = np.array(cloud_points)
+    y_pred = clusterer.fit_predict(X)
+
+    red = y_pred == 0
+    green = y_pred == 1
+    blue = y_pred == 2
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111, projection='3d')
+    plt.tight_layout()
+
+    ax1.scatter(X[red, 0], X[red, 1], X[red, 2], c='r', s=1, label='Cluster 1')
+    ax1.scatter(X[green, 0], X[green, 1], X[green, 2], c='g', s=1, label='Cluster 2')
+    ax1.scatter(X[blue, 0], X[blue, 1], X[blue, 2], c='b', s=1, label='Cluster 3')
+
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+    ax1.set_title('KMeans 3D Clustering')
+    ax1.legend()
+
+    clusters = {
+        'Klaster 1 (czerwony)': X[red],
+        'Klaster 2 (zielony)': X[green],
+        'Klaster 3 (niebieski)': X[blue],
+    }
+
+    for name, cluster in clusters.items():
+        model, inliers = RANSAC(cluster)
+        normal_vec, D = model
         
-    '''
-    points = np.loadtxt('horizontal_surface_points.xyz', delimiter=',', skiprows=1)
-    model, inliers = RANSAC(points, threshold=0.1, max_iterations=1000)
-    print(f"Znaleziono {len(inliers)}/{len(points)} inlierów")
-    print(f"Model płaszczyzny: wektor normalny = {model[0]}, D = {model[1]}")'''
+        # obliczenie odległości punktów od znalezionej płaszczyzny
+        distances = np.abs(np.dot(cluster, normal_vec) + D)
+        inlier_ratio = len(inliers) / len(cluster)
+        
+        print(f"\n--- {name} (RANSAC) ---")
+        print(f"Wektor normalny: [{normal_vec[0]:.4f}, {normal_vec[1]:.4f}, {normal_vec[2]:.4f}]")
+        print(f"Odsetek inlierów: {inlier_ratio:.1%}, Średnia odległość: {np.mean(distances):.2f}")
+        
+        if inlier_ratio > 0.5:
+            if abs(normal_vec[2]) > 0.8:
+                typ = "płaszczyzna pozioma"
+            else:
+                typ = "płaszczyzna pionowa"
+            print(f"Decyzja: Chmura jest płaszczyzną -> {typ}")
+        else:
+            print("Decyzja: Chmura nie jest płaszczyzną")
+
+    # 6
+    clusterer = DBSCAN(eps=50.0)
+    X = np.array(cloud_points)
+    y_pred = clusterer.fit_predict(X)
+    
+    red = y_pred == 0
+    green = y_pred == 1
+    blue = y_pred == 2
+    
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111, projection='3d')
+    plt.tight_layout()
+    
+    ax2.scatter(X[red, 0], X[red, 1], X[red, 2], c='r', s=1, label='Cluster 1')
+    ax2.scatter(X[green, 0], X[green, 1], X[green, 2], c='g', s=1, label='Cluster 2')
+    ax2.scatter(X[blue, 0], X[blue, 1], X[blue, 2], c='b', s=1, label='Cluster 3')
+    
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
+    ax2.set_title('DBSCAN 3D Clustering')
+    ax2.legend()
+
+    plane = pyrsc.Plane()
+
+    clusters = {
+        'Klaster 1 (czerwony)': X[red],
+        'Klaster 2 (zielony)': X[green],
+        'Klaster 3 (niebieski)': X[blue],
+    }
+
+    for name, cluster in clusters.items():
+        equation, inliers = plane.fit(cluster, thresh=0.1, maxIteration=1000)
+        normal_vec = equation[:3]
+        D = equation[3]
+        
+        inlier_ratio = len(inliers) / len(cluster)
+
+        print(f"\n--- {name} (pyransac3d) ---")
+        print(f"Wektor normalny: [{normal_vec[0]:.4f}, {normal_vec[1]:.4f}, {normal_vec[2]:.4f}]")
+        print(f"Odsetek inlierów: {inlier_ratio:.1%}")
+            
+        if inlier_ratio > 0.5:
+            if abs(normal_vec[2]) > 0.8:
+                typ = "płaszczyzna pozioma"
+            else:
+                typ = "płaszczyzna pionowa"
+            print(f"Decyzja: Chmura jest płaszczyzną -> {typ}")
+        else:
+            print("Decyzja: Chmura nie jest płaszczyzną")
+
+    plt.show()
