@@ -112,7 +112,7 @@ if __name__ == '__main__':
             print("Decyzja: Chmura nie jest płaszczyzną")
 
     # 6
-    clusterer = DBSCAN(eps=50.0)
+    clusterer = DBSCAN(eps=20.0)
     X = np.array(cloud_points)
     y_pred = clusterer.fit_predict(X)
     
