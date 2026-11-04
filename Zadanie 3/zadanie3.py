@@ -1,5 +1,8 @@
 import os
 import cv2
+from skimage.feature import graycomatrix, graycoprops
+import numpy as np
+import pandas as pd
 
 def process_textures(input_directory:str, output_directory:str, image_size, sample_size:tuple=(128, 128)):
     # utworzenie katalogu wyjściowego, jeśli nie istnieje
@@ -25,10 +28,51 @@ def process_textures(input_directory:str, output_directory:str, image_size, samp
                                 counter += 1
 
 
+def extract_features(image_path):
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE) # wczytanie w skali szarości
+
+    target_levels = 64 # ilość poziomów jasności po kwantyzacji
+    interval = 256 // target_levels # dzielnik do kwantyzacji
+    reduced_image = (image // interval) # kwantyzacja
+
+    # wyznaczanie cech GLCM
+    distances = [1, 3, 5] # odległości pikseli
+    angles = [0, np.pi/4, np.pi/2, 3*np.pi/4] # kąty w radianach
+    glcm = graycomatrix(reduced_image, distances=distances, angles=angles, levels=target_levels, symmetric=True, normed=True) # obliczanie macierzy zdarzeń (ang. Grey-Level Co-occurrence Matrix)
+    
+    properties = ['dissimilarity', 'correlation', 'contrast', 'energy', 'homogeneity', 'ASM'] # cechy do wyznaczenia
+    feature_vector = [] # wektor cech
+    for prop in properties:
+        feature_vector.extend(graycoprops(glcm, prop).ravel())
+
+    return feature_vector
+
+
+def create_dataset(samples_directory, output_csv):
+    dataset = []  # przygotowanie pustej listy na dane
+
+    for category_folder in os.listdir(samples_directory):
+        category_path = os.path.join(samples_directory, category_folder)
+        if os.path.isdir(category_path):
+            for image_file in os.listdir(category_path):
+                if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    image_path = os.path.join(category_path, image_file)
+                    vec = extract_features(image_path)  # wyodrębnianie cech z próbki
+                    vec.append(category_folder)  # dodanie etykiety kategorii
+                    dataset.append(vec)  # dodanie całego wiersza do dataset
+
+    # zapisanie danych do pliku CSV
+    df = pd.DataFrame(dataset)
+    df.to_csv(output_csv, index=False)
+
+
 if __name__ == '__main__':
-    input_directory = 'Tekstury'  # katalog wejściowy z obrazami
-    output_directory = 'Tekstury_samples'  # katalog wyjściowy na próbki
-    image_size = (512, 512)  # rozmiar obrazu po zmianie rozmiaru
-    sample_size = (128, 128)  # rozmiar próbki (szerokość, wysokość)
+    input_directory = 'Tekstury' # katalog wejściowy z obrazami
+    output_directory = 'Tekstury_samples' # katalog wyjściowy na próbki
+    image_size = (512, 512) # rozmiar obrazu po zmianie rozmiaru
+    sample_size = (128, 128) # rozmiar próbki (szerokość, wysokość)
 
     process_textures(input_directory, output_directory, image_size, sample_size)
+
+    output_csv = 'dataset.csv' # nazwa pliku CSV z danymi
+    create_dataset(output_directory, output_csv)
