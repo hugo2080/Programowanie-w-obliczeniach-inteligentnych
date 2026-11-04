@@ -62,8 +62,14 @@ def create_dataset(samples_directory, output_csv):
                     dataset.append(vec)  # dodanie całego wiersza do dataset
 
     # zapisanie danych do pliku CSV
-    df = pd.DataFrame(dataset)
+    columns = [f"feature_{i}" for i in range(72)] + ['label']
+    df = pd.DataFrame(dataset, columns=columns)
     df.to_csv(output_csv, index=False)
+
+
+def classifier():
+    # funkcja klasyfikatora (do zaimplementowania)
+    pass
 
 
 if __name__ == '__main__':
