@@ -3,6 +3,9 @@ import cv2
 from skimage.feature import graycomatrix, graycoprops
 import numpy as np
 import pandas as pd
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
 def process_textures(input_directory:str, output_directory:str, image_size, sample_size:tuple=(128, 128)):
     # utworzenie katalogu wyjściowego, jeśli nie istnieje
@@ -41,11 +44,11 @@ def extract_features(image_path):
     glcm = graycomatrix(reduced_image, distances=distances, angles=angles, levels=target_levels, symmetric=True, normed=True) # obliczanie macierzy zdarzeń (ang. Grey-Level Co-occurrence Matrix)
     
     properties = ['dissimilarity', 'correlation', 'contrast', 'energy', 'homogeneity', 'ASM'] # cechy do wyznaczenia
-    feature_vector = [] # wektor cech
+    vector = [] # wektor cech
     for prop in properties:
-        feature_vector.extend(graycoprops(glcm, prop).ravel())
+        vector.extend(graycoprops(glcm, prop).ravel())
 
-    return feature_vector
+    return vector
 
 
 def create_dataset(samples_directory, output_csv):
@@ -67,9 +70,15 @@ def create_dataset(samples_directory, output_csv):
     df.to_csv(output_csv, index=False)
 
 
-def classifier():
-    # funkcja klasyfikatora (do zaimplementowania)
-    pass
+def classifier(X, Y):
+    model = svm.SVC(gamma='auto') # tworzenie klasyfikatora SVM z automatycznym doborem parametru gamma
+    
+    x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.33) # podział danych na zbiór treningowy i testowy
+    
+    model.fit(x_train, y_train) # trenowanie klasyfikatora na zbiorze treningowym
+    y_pred = model.predict(x_test) # przewidywanie etykiet dla zbioru testowego
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Dokładność modelu: {acc}")
 
 
 if __name__ == '__main__':
@@ -82,3 +91,8 @@ if __name__ == '__main__':
 
     output_csv = 'dataset.csv' # nazwa pliku CSV z danymi
     create_dataset(output_directory, output_csv)
+
+    df = pd.read_csv(output_csv)
+    X = df.drop(columns=['label']) # pobranie cech z kolumn, bez kolumny 'label'
+    Y = df['label'] # pobranie etykiet z kolumny 'label'
+    classifier(X, Y)
